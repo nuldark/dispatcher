@@ -1,0 +1,37 @@
+{
+  "name": "@community/event-dispatcher",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "engines": {
+    "node": ">=12.18.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FFx0q/event-dispatcher.git"
+  },
+  "keywords": [
+    "amqp",
+    "events",
+    "rpc",
+    "dispatcher"
+  ],
+  "author": "FFx0q",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.5.13",
+    "@types/node": "^14.0.23",
+    "typescript": "^3.9.6"
+  },
+  "files": [
+    "lib/**/*"
+  ]
+}
