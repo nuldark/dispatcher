@@ -3,10 +3,10 @@ import { ConsumeMessage, Connection } from 'amqplib';
 
 export default async (connection: Connection) => {
     const emit = async (event: string ,...args: any[]): Promise<any> => {
-        const channel = await connection.createChannel();
-        const q  = await channel.assertQueue('', { exclusive: true });
+        const channel = await connection.createChannel().catch(e => { throw e });
+        const q = await channel.assertQueue('', { exclusive: true });
 
-        const message = createMessage(q.queue, { event, args: args});
+        const message = createMessage(q.queue, { event, args: args });
 
         channel.sendToQueue('request', message.content, message.options);
 

@@ -9,10 +9,14 @@ export default async (connection: Connection) => {
             console.log('[RPC] No registers callbacks');
         }
         const queue = 'request';
-        const channel = await connection.createChannel();
+            const channel = await connection.createChannel().catch(e => { throw e });
 
-        await channel.assertQueue(queue, { durable: false });
-        await channel.prefetch(1);
+        try {
+            await channel.assertQueue(queue, {durable: false});
+            await channel.prefetch(1);
+        } catch (e) {
+            throw e;
+        }
         
         console.log('[RPC] Awaiting for request..');
 
@@ -20,22 +24,26 @@ export default async (connection: Connection) => {
             if (!msg) {
                 return;
             }
-            
-            let content: RequestPayload = JSON.parse(msg.content.toString());
-            console.log(`[RPC] Request event: ${content.event}`);
+            try {
+                let content: RequestPayload = JSON.parse(msg.content.toString());
+                console.log(`[RPC] Request event: ${content.event}`);
 
-            const response = await Promise.resolve(
-                call(content.event, content.args || [])
-            );
+                const response = await Promise.resolve(
+                    call(content.event, content.args || [])
+                );
 
-            channel.sendToQueue(
-                msg!.properties.replyTo, 
-                Buffer.from(JSON.stringify(response)),  
-                {
-                    correlationId: msg!.properties.correlationId,
-                    replyTo: msg!.properties.replyTo
-                });
-            channel.ack(msg);
+                channel.sendToQueue(
+                    msg!.properties.replyTo,
+                    Buffer.from(JSON.stringify(response)),
+                    {
+                        correlationId: msg!.properties.correlationId,
+                        replyTo: msg!.properties.replyTo
+                    });
+
+                channel.ack(msg);
+            } catch (e) {
+                throw e;
+            }
         }, { noAck: true });
     };
 

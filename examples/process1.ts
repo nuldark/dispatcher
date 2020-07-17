@@ -1,8 +1,8 @@
-import * as EventDispatcher from "../src";
+import EventDispatcher from "../src";
 
 (async () => {
     try {
-        const myDispatcher = await EventDispatcher.connect('amqp://localhost');
+        const myDispatcher = await EventDispatcher('amqp://localhost');
 
         myDispatcher.register('user.get', (user: string) => {
             return `Hello ${user}`;

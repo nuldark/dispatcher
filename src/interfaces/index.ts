@@ -3,10 +3,6 @@ export interface RequestPayload {
     args?: any[]
 };
 
-export interface ResponsePayload {
-    content: any
-}
-
 export interface RequestMessage {
     queue: string,
     content: Buffer,
@@ -15,7 +11,3 @@ export interface RequestMessage {
         replyTo: string
     }
 }
-
-export interface ReplyPayload {
-
-};
