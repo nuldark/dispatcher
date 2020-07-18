@@ -1,50 +1,24 @@
-import { ConsumeMessage, Connection } from 'amqplib';
-import { RequestPayload } from './interfaces';
+import {ConsumeMessage, Connection, Message, Channel} from 'amqplib';
+import { RequestContent } from './interfaces';
 
 const events: Map<string, (...args: any[]) => any> = new Map();
+const queue = 'request';
 
 export default async (connection: Connection) => {
     const listen = async () => {
-        if (events.size === 0) {
-            console.log('[RPC] No registers callbacks');
-        }
-        const queue = 'request';
-            const channel = await connection.createChannel().catch(e => { throw e });
+        let channel: Channel;
 
         try {
+            channel = await connection.createChannel();
+
             await channel.assertQueue(queue, {durable: false});
             await channel.prefetch(1);
+
+            console.log('[RPC] Awaiting for request..');
+            await channel.consume(queue, msg => onMessageHandler(channel, msg));
         } catch (e) {
-            throw e;
+            throw new Error(e.message);
         }
-        
-        console.log('[RPC] Awaiting for request..');
-
-        await channel.consume(queue, async (msg: ConsumeMessage | null) => {
-            if (!msg) {
-                return;
-            }
-            try {
-                let content: RequestPayload = JSON.parse(msg.content.toString());
-                console.log(`[RPC] Request event: ${content.event}`);
-
-                const response = await Promise.resolve(
-                    call(content.event, content.args || [])
-                );
-
-                channel.sendToQueue(
-                    msg!.properties.replyTo,
-                    Buffer.from(JSON.stringify(response)),
-                    {
-                        correlationId: msg!.properties.correlationId,
-                        replyTo: msg!.properties.replyTo
-                    });
-
-                channel.ack(msg);
-            } catch (e) {
-                throw e;
-            }
-        }, { noAck: true });
     };
 
     const register = (event: string, callback: (...args: any[]) => any) =>
@@ -58,14 +32,46 @@ export default async (connection: Connection) => {
     }
 };
 
-const call = async(event: string, args: any[]): Promise<any> => {
-    if (!event) {
-        throw new Error('No event given');
+const onMessageHandler = async (channel: Channel, message: ConsumeMessage | null): Promise<any> => {
+    if (!message) {
+        return;
+    }
+    channel.ack(message);
+
+    const replyTo = message.properties.replyTo;
+    const correlationId = message.properties.correlationId;
+    const persistent = message.properties.deliveryMode !== 1;
+
+    try {
+        const requestContent = await getRequestContent(message);
+        const result = await call(requestContent.event, requestContent.args || []);
+        const content = Buffer.from(JSON.stringify(result));
+
+        await channel.sendToQueue(replyTo, content, { correlationId, persistent });
+    } catch (e) {
+        console.log(e.message);
+        //TODO:
+        // send error as response
+    }
+}
+
+const getRequestContent = async (message: Message): Promise<RequestContent> => {
+    let content: RequestContent;
+
+    try {
+        content = JSON.parse(message.content.toString());
+    } catch (e) {
+        throw new Error(`Parse error: ${e.message}`);
     }
 
+    return content;
+}
+
+const call = async(event: string, ...args: any[]): Promise<any> => {
     const cb = events.get(event);
+
     if (!cb) {
-        throw new Error('No such callback');
+        throw new Error(`Unknown event: ${event}`);
     }
 
     return await cb(...args);

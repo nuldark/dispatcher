@@ -1,15 +1,11 @@
 import EventDispatcher from "../src";
 
 (async () => {
-    try {
-        const myDispatcher = await EventDispatcher('amqp://localhost');
+    const myDispatcher = await EventDispatcher('amqp://localhost');
 
-        myDispatcher.register('user.get', (user: string) => {
-            return `Hello ${user}`;
-        })
-        await myDispatcher.listen()
-    } catch (e) {
-        console.log(e);
-    }
+    myDispatcher.register('hello', (user: string) =>  { return `Hello ${user}` });
+    await myDispatcher.listen();
 
-})()
+    const result = await myDispatcher.emit('hello', 'John');
+    console.log(result);
+})();
