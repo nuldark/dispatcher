@@ -1,60 +1,71 @@
 import {ConsumeMessage, Connection, Channel} from 'amqplib';
 
-const requests: Map<string, object> = new Map();
 
-export default async (connection: Connection) => {
-    const emit = async (event: string ,...args: any[]): Promise<any> => {
-        const channel = await connection.createChannel();
+export default class Request
+{
+    private readonly connection: Connection
+    private readonly queue: string = 'request'
+    private requests: Map<string, object> = new Map();
+
+    constructor(connection: Connection)
+    {
+        this.connection = connection
+        this.requests = new Map()
+    }
+
+    // Public API
+    public async emit(event: string, ...args: any[]): Promise<any>
+    {
+        const channel = await this.connection.createChannel();
         const { queue } = await channel.assertQueue('', { exclusive: true });
 
-        const correlationId = generateUUID();
+        const correlationId = this.generateUUID();
         const payload = Buffer.from(JSON.stringify({ event, args}));
         const options = { correlationId,  replyTo: queue };
 
-        requests.set(correlationId, { payload, options });
-        channel.sendToQueue('request', payload, options);
+        this.requests.set(correlationId, { payload, options });
+        channel.sendToQueue(this.queue, payload, options);
 
         return Promise.race([
-            getResponse(queue, channel),
-            callTimeout(correlationId)
+            this.getResponse(queue, channel),
+            this.callTimeout(correlationId)
         ]).catch(e => {
             channel.close();
             throw e;
-        });
+        }); 
     }
 
-    return {
-        emit
-    }
-}
-const callTimeout = async (correlationId: string): Promise<void>=> {
-    return new Promise((_, reject) => {
-        setTimeout(() => {
-            requests.delete(correlationId);
-            reject('[RPC] Timeout');
-        }, 25000);
-    });
-}
-const getResponse = async (queue: string, channel: Channel): Promise<any> => {
-    return new Promise (async (resolve, _) => {
-        await channel.consume(queue, (message: ConsumeMessage | null) => {
-            if (!message) {
-                return;
-            }
-            const { correlationId } = message.properties;
-            const callback = requests.get(correlationId);
-
-            if (!callback) {
-                console.log('[RPC] Unknown event.');
-                return;
-            }
-
-            const response = JSON.parse(message.content.toString());
-            resolve(response);
+    // Private API
+    private callTimeout (correlationId: string): Promise<void> 
+    {
+        return new Promise((_, reject) => {
+            setTimeout(() => {
+                this.requests.delete(correlationId);
+                reject('[Dispatcher] Timeout');
+            }, 25000);
         });
-    })
-}
+    }
+    private getResponse (queue: string, channel: Channel): Promise<any> {
+        return new Promise (async (resolve, _) => {
+            await channel.consume(queue, (message: ConsumeMessage | null) => {
+                if (!message) return;
 
-const generateUUID = () : string => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                const { correlationId } = message.properties;
+                const callback = this.requests.get(correlationId);
+    
+                if (!callback) {
+                    console.log('[Dispatcher] Unknown event.');
+                    return;
+                }
+    
+                const response = JSON.parse(message.content.toString());
+                resolve(response);
+            });
+        })
+    }
+    
+    private generateUUID () : string 
+    {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
 }

@@ -1,22 +1,36 @@
 import * as amqp from 'amqplib';
-import { default as request } from './request';
-import { default as reply } from './reply';
+import Request from './request';
+import Response from './response';
 
-export default async (url: string) => {
-    let module: any = {};
-    try {
-        const connection = await amqp.connect(url);
+export class EventDispatcher
+{
+    private req?: Request
+    private res?: Response
 
-        const req = await request(connection);
-        const rep = await reply(connection);
+    constructor () {}
 
-        module.emit = req.emit;
-        module.listen = rep.listen;
-        module.register = rep.register;
+    public static create = async (url: string) => {
+        const self = new EventDispatcher()
+        const conn = await amqp.connect(url)
 
-    } catch (e) {
-        console.log(e.message);
+        self.req = new Request(conn)
+        self.res = new Response(conn)
+
+        return self
     }
 
-    return module;
-};
+    public async emit(event: string, ...args: any[]): Promise<any>
+    {
+        return this.req?.emit(event, args)
+    }
+
+    public register (event: string, callback: (...args: any[]) => any)
+    {
+        this.res?.register(event, callback)
+    }
+
+    public async listen ()
+    {
+        this.res?.listen()
+    }
+}

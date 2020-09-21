@@ -2,18 +2,17 @@
 A simple EventDispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.
    
 ## Usage
-    import EventDispatcher from 'event-dispatcher';
+    import { EventDispatcher } from '../src'
 
     (async () => {
-        const myDispatcher = await EventDispatcher('amqp://localhost');
+        const dispatcher = await EventDispatcher.create('amqp://localhost')
 
-        myDispatcher.register('hello', (user: string) =>  { return `Hello ${user}` });
-        await myDispatcher.listen();
+        dispatcher.register('hello', (user: string) =>  { return `Hello ${user}` });
+        dispatcher.listen();
 
-        const result = await myDispatcher.emit('hello', 'John');
-        console.log(result);
-    })();
-    
+        console.log(await dispatcher.emit('hello', 'John'))
+    })()
+        
 ## Api reference
     async emit(event: string, ...args: any[]) => Promise<any>
 Emit new event.
@@ -29,6 +28,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 * **Dominik Szamburski** - *Initial work* - [FFx0q](https://github.com/FFx0q)
+
 See also the list of [contributors](https://github.com/FFx0q/event-dispatcher/contributors) who participated in this project.
 
 ## License
