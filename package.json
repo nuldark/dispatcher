@@ -1,14 +1,14 @@
 {
   "name": "event-dispatcher",
   "version": "0.1.0",
-  "description": "",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "description": "A simple EventDispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.",
+  "main": "src/index.ts",
   "engines": {
     "node": ">=12.18.0"
   },
   "scripts": {
-    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix",
+    "build": "rimraf ./lib && tsc",
     "prepare": "npm run build"
   },
   "repository": {
@@ -29,6 +29,10 @@
   "devDependencies": {
     "@types/amqplib": "^0.5.13",
     "@types/node": "^14.0.23",
+    "@typescript-eslint/eslint-plugin": "^4.2.0",
+    "@typescript-eslint/parser": "^4.2.0",
+    "eslint": "^7.9.0",
+    "rimraf": "^3.0.2",
     "typescript": "^3.9.6"
   },
   "files": [
