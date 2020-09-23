@@ -2,7 +2,7 @@
   "name": "event-dispatcher",
   "version": "0.1.0",
   "description": "A simple EventDispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
   "engines": {
     "node": ">=12.18.0"
   },
