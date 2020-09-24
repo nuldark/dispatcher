@@ -2,7 +2,7 @@ import * as amqp from 'amqplib'
 import Request from './request'
 import Response from './response'
 
-export class EventDispatcher {
+export default class EventDispatcher {
     private req?: Request
     private res?: Response
 

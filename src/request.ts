@@ -7,7 +7,7 @@ export interface IRequest {
 
 export default class Request {
     private readonly connection: Connection
-    private readonly queue: string = 'request'
+    private readonly queue: string = 'events'
     private requests: Map<string, unknown> = new Map();
 
     constructor (connection: Connection) {
@@ -41,23 +41,20 @@ export default class Request {
       return new Promise((_, reject) => {
         setTimeout(() => {
           this.requests.delete(correlationId)
-          reject('[Dispatcher] Timeout')
-        }, 25000)
+          reject(new Error('Request Timeout'))
+        }, 10000)
       })
     }
 
     private getResponse (queue: string, channel: Channel): Promise<any> {
-      return new Promise((resolve, _) => {
+      return new Promise((resolve, reject) => {
         channel.consume(queue, (message: ConsumeMessage | null) => {
           if (!message) return
 
           const { correlationId } = message.properties
           const callback = this.requests.get(correlationId)
 
-          if (!callback) {
-            console.log('[Dispatcher] Unknown event.')
-            return
-          }
+          if (!callback) reject(new Error('Unknown event'))
 
           const response = JSON.parse(message.content.toString())
           resolve(response)
