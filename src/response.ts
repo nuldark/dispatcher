@@ -1,19 +1,21 @@
 import { ConsumeMessage, Connection, Message, Channel } from 'amqplib'
 import { IRequest } from './request'
+import AmqpWrapper from './wrapper'
 
 export default class Response {
+    private readonly connection: Promise<Connection> 
     private queue = 'events'
-    private connection: Connection
     private events: Map<string, (...args: any[]) => any>
 
-    constructor (connection: Connection) {
-      this.connection = connection
+    constructor (wrapper: AmqpWrapper) {
+      this.connection = wrapper.connect()
       this.events = new Map()
     }
 
     // Public API
     public async listen (): Promise<void> {
-      const channel: Channel = await this.connection.createChannel()
+      const connection = await this.connection
+      const channel: Channel = await connection.createChannel()
 
       await channel.assertQueue(this.queue, { durable: false })
       await channel.prefetch(1)
@@ -21,7 +23,6 @@ export default class Response {
       console.log('Awaiting for request..')
       await channel.consume(this.queue, async msg => {
         if (!msg) return
-        channel.ack(msg)
   
         const { replyTo, correlationId, deliveryMode } = msg.properties
         const persistent = deliveryMode !== -1
@@ -31,6 +32,8 @@ export default class Response {
 
         const content = Buffer.from(JSON.stringify(result))
         channel.sendToQueue(replyTo, content, { correlationId, persistent })
+
+        channel.ack(msg)
       })
     }
 

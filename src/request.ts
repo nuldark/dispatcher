@@ -1,4 +1,5 @@
 import { ConsumeMessage, Connection, Channel } from 'amqplib'
+import AmqpWrapper from './wrapper';
 
 export interface IRequest {
     event: string,
@@ -6,18 +7,19 @@ export interface IRequest {
 }
 
 export default class Request {
-    private readonly connection: Connection
+    private readonly wrapper: AmqpWrapper 
     private readonly queue: string = 'events'
     private requests: Map<string, unknown> = new Map();
 
-    constructor (connection: Connection) {
-      this.connection = connection
+    constructor (wrapper: AmqpWrapper) {      
+      this.wrapper = wrapper
       this.requests = new Map()
     }
 
     // Public API
     public async emit (event: string, ...args: any[]): Promise<any> {
-      const channel = await this.connection.createChannel()
+      const connection = await this.wrapper.connect()
+      const channel = await connection.createChannel()
       const { queue } = await channel.assertQueue('', { exclusive: true })
 
       const correlationId = this.generateUUID()
@@ -27,13 +29,12 @@ export default class Request {
       this.requests.set(correlationId, { payload, options })
       channel.sendToQueue(this.queue, payload, options)
 
-      return Promise.race([
-        this.getResponse(queue, channel),
-        this.callTimeout(correlationId)
-      ]).catch(e => {
-        channel.close()
-        throw e
-      })
+      return Promise.race([ this.getResponse(queue, channel), this.callTimeout(correlationId) ])
+        .catch(e => {
+          channel.close()
+          throw e
+        })
+        .finally(() => connection.close())
     }
 
     // Private API
@@ -57,8 +58,9 @@ export default class Request {
           if (!callback) reject(new Error('Unknown event'))
 
           const response = JSON.parse(message.content.toString())
+
           resolve(response)
-        })
+        }, { noAck: true })
       })
     }
 
