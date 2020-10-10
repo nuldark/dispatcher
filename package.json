@@ -1,19 +1,18 @@
 {
-  "name": "event-dispatcher",
+  "name": "rpc-dispatcher",
   "version": "0.1.0",
-  "description": "A simple EventDispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.",
+  "description": "A simple event dispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.",
   "main": "lib/index.js",
   "engines": {
     "node": ">=12.18.0"
   },
   "scripts": {
-    "lint": "eslint . --ext .ts --fix",
-    "build": "rimraf ./lib && tsc",
-    "prepare": "npm run build"
+    "lint": "standard src/*.js --fix",
+    "prepare": "npm run lint"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FFx0q/event-dispatcher.git"
+    "url": "git+https://github.com/FFx0q/rpc-dispatcher.git"
   },
   "keywords": [
     "amqp",
@@ -27,13 +26,9 @@
     "amqplib": "^0.6.0"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.5.13",
-    "@types/node": "^14.0.23",
-    "@typescript-eslint/eslint-plugin": "^4.2.0",
-    "@typescript-eslint/parser": "^4.2.0",
-    "eslint": "^7.9.0",
+    "nodemon": "^2.0.4",
     "rimraf": "^3.0.2",
-    "typescript": "^3.9.6"
+    "standard": "^14.3.4"
   },
   "files": [
     "lib/**/*"
