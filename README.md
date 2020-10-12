@@ -1,8 +1,8 @@
 # RPC Dispatcher
 A simple RPC Dispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.
-   
+
 ## Usage
-    const { RPCClient, RPCServer } from 'rpc-dispatcher'
+    const { RPCClient, RPCServer } = require('rpc-dispatcher')
 
     (async () => {
         const server = new RPCServer('amqp://localhost')
@@ -24,6 +24,9 @@ Register new event callback
 
     async listen() => Promise<void>
 Start listen for new requests. Use this after register events.
+    
+    async start() => Promise<void>
+Initalize client
 
 ## Versioning
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/FFx0q/event-dispatcher/tags). 
