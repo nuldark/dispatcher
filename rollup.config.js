@@ -1,7 +1,5 @@
 import pkg from './package.json'
 import commonjs from '@rollup/plugin-commonjs'
-import json from '@rollup/plugin-json'
-import { nodeResolve } from '@rollup/plugin-node-resolve'
 import { terser } from 'rollup-plugin-terser'
 
 export default [
@@ -11,10 +9,9 @@ export default [
             file: pkg.main, 
             format: 'cjs'
         },
+        external: ['amqplib'],
         plugins: [
-            nodeResolve(),
             commonjs(),
-            json(),
             terser()
         ]
     }
