@@ -1,4 +1,4 @@
-const AMQPWrapper = require('./AMQPWrapper')
+const AMQPWrapper = require('./wrapper')
 
 class RPCClient extends AMQPWrapper {
   constructor (url) {
