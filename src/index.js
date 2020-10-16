@@ -1,6 +1,6 @@
 'use strict'
 
 module.exports = {
-  RPCClient: require('./client'),
-  RPCServer: require('./server')
+  RpcClient: require('./client'),
+  RpcServer: require('./server')
 }

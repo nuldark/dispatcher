@@ -1,52 +1,48 @@
 const AMQPWrapper = require('./wrapper')
 
-class RPCServer extends AMQPWrapper {
+class RPCServer {
   constructor (url) {
-    super(url)
-
+    this.amqp = new AMQPWrapper(url)
     this.events = new Map()
   }
 
-  // Public API
   async listen () {
-    await super.start()
+    if (this.events.size === 0) {
+      console.log('[RpcServer] Initializing server with no events.')
+    }
+    
+    await this.amqp.start()
+    await this.amqp.channel.assertQueue('events', { durable: false })
 
-    await this.channel.assertQueue('events', { durable: false })
-    await this.channel.prefetch(1)
+    const { consumerTag } = await this.amqp.channel.consume(
+      'events', 
+      async message => {
+        this.amqp.channel.ack(message)
+        
+        const { replyTo, correlationId, deliveryMode } = message.properties
+        const request = JSON.parse(message.content.toString())
+        const event = this.events.get(request.event)
+        
+        if (event) {
+          const content = await event(request.args || [])
+          const response = Buffer.from(JSON.stringify(content))
+          
+          this.amqp.channel.sendToQueue(replyTo, response, { correlationId, deliveryMode })
+        }
+        
+        return
+    })
 
-    const consume = await this.channel.consume('events', msg => this.handleMessage(msg))
-    this._consumerTag = consume.consumerTag
+    this._consumerTag = consumerTag
   }
 
   register (event, callback) {
     this.events.set(event, callback)
   }
 
-  // Private API
-  async call (event, ...args) {
-    const cb = this.events.get(event)
-
-    if (!cb) return
-
-    const out = await cb(args)
-    return Buffer.from(JSON.stringify(out))
-  }
-
   async close () {
-    await this.channel.close(this._consumerTag)
-    await super.close()
-  }
-
-  async handleMessage (message) {
-    this.channel.ack(message)
-
-    const { replyTo, correlationId, deliveryMode } = message.properties
-    const persistent = deliveryMode !== -1
-
-    const request = JSON.parse(message.content.toString())
-    const content = await this.call(request.event, request.args || [])
-
-    this.channel.sendToQueue(replyTo, content, { correlationId, persistent })
+    await this.amqp.channel.close(this._consumerTag)
+    await this.amqp.close()
   }
 }
 

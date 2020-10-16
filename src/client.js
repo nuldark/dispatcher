@@ -1,66 +1,67 @@
 const AMQPWrapper = require('./wrapper')
+const { generateUUID } = require('./utils')
 
-class RPCClient extends AMQPWrapper {
+class RPCClient {
   constructor (url) {
-    super(url)
-
+    this.amqp = new AMQPWrapper(url)
     this.requests = []
   }
 
   // Public API
   async emit (event, ...args) {
-    const correlationId = this.generateUUID()
-    const content = Buffer.from(JSON.stringify({ event, args }))
-    const properties = { correlationId, replyTo: this.queue }
+    await this.amqp.start()
 
-    this.requests.push(correlationId)
-    this.channel.sendToQueue('events', content, properties)
-
-    return Promise.race([this.dispatchMessage(), this.callTimeout()])
-      .catch(e => console.log(e, e.stack))
-      .finally(() => this.requests.filter(c => c === correlationId))
-  }
-
-  // Private API
-  async start () {
-    await super.start()
-    const { queue } = await this.channel.assertQueue('', { exclusive: true })
-
+    const { queue } = await this.amqp.channel.assertQueue('', { exclusive: true })
     this.queue = queue
+
+    const correlationId = generateUUID()
+    this.requests.push(correlationId)
+
+    this.amqp.channel.sendToQueue(
+      'events',
+      Buffer.from(JSON.stringify({ event, args })),
+      { correlationId, replyTo: this.queue }
+    )
+
+    try {
+      return Promise.race([
+        this.messageHandler(),
+        this.callTimeout()
+      ])
+    } finally {
+      delete this.requests[correlationId]
+    }
+
   }
 
-  async close () {
-    await this.channel.close(this._consumerTag)
-    await super.close()
-  }
-
-  callTimeout (correlationId) {
+  callTimeout () {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        this.requests.filter(c => c === correlationId)
-        reject(new Error('Request Timeout'))
+        reject(new Error('[RpcClient] Request Timeout.'))
       }, 10000)
     })
   }
 
-  dispatchMessage () {
+  messageHandler () {
     return new Promise((resolve, reject) => {
-      const consume = this.channel.consume(this.queue, (message) => {
-        this.channel.ack(message)
+      const { consumerTag } = this.amqp.channel.consume(
+        this.queue,
+        message => {
+          if (!message) return
 
-        const { correlationId } = message.properties
-        const request = this.requests.find(el => el === correlationId)
-        if (!request) return
+          const { correlationId } = message.properties
+          const request = this.requests.find(el => el === correlationId)
 
-        resolve(message.content.toString())
-      })
+          if (!request) {
+            return
+          }
 
-      this._consumerTag = consume.consumerTag
+          resolve(message.content.toString())
+        },
+        { noAck: true }
+      )
+      this._consumerTag = consumerTag
     })
-  }
-
-  generateUUID () {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
 }
 
