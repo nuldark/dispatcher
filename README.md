@@ -11,7 +11,6 @@ A simple RPC Dispatcher which implements RPC pattern over RabbitMQ. Allows to re
         server.register('hello', (user: string) => `Hello ${user}`);
         server.listen();
 
-        await client.start()
         console.log(await client.emit('hello', 'John'))
     })().catch(e => console.log(e))
 
@@ -24,9 +23,6 @@ Register new event callback
 
     async listen() => Promise<void>
 Start listen for new requests. Use this after register events.
-    
-    async start() => Promise<void>
-Initalize client
 
 ## Versioning
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/FFx0q/event-dispatcher/tags). 

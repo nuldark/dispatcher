@@ -10,28 +10,28 @@ class RPCServer {
     if (this.events.size === 0) {
       console.log('[RpcServer] Initializing server with no events.')
     }
-    
+
     await this.amqp.start()
     await this.amqp.channel.assertQueue('events', { durable: false })
 
     const { consumerTag } = await this.amqp.channel.consume(
-      'events', 
+      'events',
       async message => {
         this.amqp.channel.ack(message)
-        
+
         const { replyTo, correlationId, deliveryMode } = message.properties
         const request = JSON.parse(message.content.toString())
         const event = this.events.get(request.event)
-        
+
         if (event) {
           const content = await event(request.args || [])
-          const response = Buffer.from(JSON.stringify(content))
-          
+          const response = Buffer.from(JSON.stringify(content) || "")
+
           this.amqp.channel.sendToQueue(replyTo, response, { correlationId, deliveryMode })
         }
-        
+
         return
-    })
+      })
 
     this._consumerTag = consumerTag
   }

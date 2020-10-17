@@ -31,7 +31,6 @@ class RPCClient {
     } finally {
       delete this.requests[correlationId]
     }
-
   }
 
   callTimeout () {
