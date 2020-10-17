@@ -25,12 +25,10 @@ class RPCServer {
 
         if (event) {
           const content = await event(request.args || [])
-          const response = Buffer.from(JSON.stringify(content) || "")
+          const response = Buffer.from(JSON.stringify(content) || '')
 
           this.amqp.channel.sendToQueue(replyTo, response, { correlationId, deliveryMode })
         }
-
-        return
       })
 
     this._consumerTag = consumerTag
