@@ -4,63 +4,77 @@ const { generateUUID } = require('./utils')
 class RPCClient {
   constructor (url) {
     this.amqp = new AMQPWrapper(url)
-    this.requests = []
+    this.requests = new Map()
   }
 
   // Public API
-  async emit (event, ...args) {
+  async start () {
     await this.amqp.start()
+    this.channel = this.amqp.channel
 
-    const { queue } = await this.amqp.channel.assertQueue('', { exclusive: true })
+    const { queue } = await this.channel.assertQueue('', { exclusive: true })
     this.queue = queue
 
-    const correlationId = generateUUID()
-    this.requests.push(correlationId)
+    const { consumerTag } = await this.channel.consume(queue, (msg) => this.messageHandler(msg))
+    this.consumerTag = consumerTag
+  }
 
-    this.amqp.channel.sendToQueue(
+  async emit (event, ...args) {
+    let res
+    let rej
+
+    const promise = new Promise((resolve, reject) => {
+      res = resolve
+      rej = reject
+    })
+
+    const correlationId = generateUUID()
+    const timer = setTimeout(() => this.cancel(correlationId), 60000)
+    this.requests.set(correlationId, {
+      res,
+      rej,
+      timer,
+      event
+    })
+
+    this.channel.sendToQueue(
       'events',
       Buffer.from(JSON.stringify({ event, args })),
-      { correlationId, replyTo: this.queue }
+      { replyTo: this.queue, correlationId }
     )
 
+    return promise
+  }
+
+  messageHandler (message) {
+    this.channel.ack(message)
+    if (!message) return
+
+    const { correlationId } = message.properties
+    const request = this.requests.get(correlationId)
+
+    if (!request) {
+      return
+    }
+
+    const { res, rej, timer } = request
+    clearTimeout(timer)
+
     try {
-      return Promise.race([
-        this.messageHandler(),
-        this.callTimeout()
-      ])
-    } finally {
-      delete this.requests[correlationId]
+      res(message.content.toString())
+    } catch (e) {
+      rej(e)
     }
   }
 
-  callTimeout () {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        reject(new Error('[RpcClient] Request Timeout.'))
-      }, 10000)
-    })
-  }
+  cancel (correlationId) {
+    const ctx = this.requests.get(correlationId)
+    const { timer, rej, event } = ctx
 
-  messageHandler () {
-    return new Promise((resolve, reject) => {
-      const { consumerTag } = this.amqp.channel.consume(
-        this.queue,
-        message => {
-          if (!message) return
+    clearTimeout(timer)
+    this.requests.delete(correlationId)
 
-          const { correlationId } = message.properties
-          const request = this.requests.find(el => el === correlationId)
-
-          if (!request) {
-            return
-          }
-
-          resolve(message.content.toString())
-        },
-        { noAck: true }
-      )
-      this._consumerTag = consumerTag
-    })
+    rej(new Error(`Timeout: ${event}, correlationId: ${correlationId}`))
   }
 }
 
