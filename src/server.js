@@ -1,47 +1,44 @@
-const AMQPWrapper = require('./wrapper')
+const amqp = require('amqplib')
 
-class RPCServer {
-  constructor (url) {
-    this.amqp = new AMQPWrapper(url)
-    this.events = new Map()
-  }
+async function server (url) {
+  const events = new Map()
 
-  async listen () {
-    if (this.events.size === 0) {
-      console.log('[RpcServer] Initializing server with no events.')
+  const connection = await amqp.connect(url)
+  const channel = await connection.createChannel()
+  await channel.prefetch(1)
+
+  const listen = async () => {
+    if (events.size === 1) {
+      console.log('[Dispatcher] Initializing server with no events.')
     }
 
-    await this.amqp.start()
-    await this.amqp.channel.assertQueue('events', { durable: false })
+    await channel.assertQueue('events', { durable: false })
+    await channel.consume('events', async message => {
+      const { replyTo, correlationId, deliveryMode } = message.properties
+      const request = JSON.parse(message.content.toString())
+      const event = events.get(request.event)
+      
+      if (event) {
+        const content = await event(request.args || [])
+        const response = Buffer.from(JSON.stringify(content) || '')
 
-    const { consumerTag } = await this.amqp.channel.consume(
-      'events',
-      async message => {
-        this.amqp.channel.ack(message)
+        channel.sendToQueue(replyTo, response, { correlationId, deliveryMode })
+      }
 
-        const { replyTo, correlationId, deliveryMode } = message.properties
-        const request = JSON.parse(message.content.toString())
-        const event = this.events.get(request.event)
-
-        if (event) {
-          const content = await event(request.args || [])
-          const response = Buffer.from(JSON.stringify(content) || '')
-
-          this.amqp.channel.sendToQueue(replyTo, response, { correlationId, deliveryMode })
-        }
-      })
-
-    this._consumerTag = consumerTag
+      channel.ack(message)
+    })
   }
 
-  register (event, callback) {
-    this.events.set(event, callback)
+  const register = (event, cb) => {
+    events.set(event, cb)
   }
 
-  async close () {
-    await this.amqp.channel.close(this._consumerTag)
-    await this.amqp.close()
+  const close = async () => {
+    channel.close()
+    connection.close()
   }
+
+  return { listen, register, close }
 }
 
-module.exports = RPCServer
+module.exports = server
