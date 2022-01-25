@@ -68,4 +68,3 @@ jobs:
         run: npm install --global npm
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-progress --prefer-offline
-      - run: npm run build

@@ -1,32 +1,32 @@
 {
-  "name": "@macotsuu/dispatcher",
-  "version": "0.4.2",
-  "description": "A package for creating communication between microservices based on RabbitMQ.",
-  "main": "src/index.js",
-  "engines": {
-    "node": ">=12.18.0"
-  },
-  "scripts": {
-    "lint": "standard src/**/*.js --fix",
-    "prepare": "npm run lint && npm run build",
-    "postversion": "git push && git push --tags"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/macotsuu/dispatcher.git"
-  },
-  "keywords": [
-    "amqp",
-    "events",
-    "rpc",
-    "dispatcher"
-  ],
-  "author": "macotsuu",
-  "license": "MIT",
-  "dependencies": {
-    "amqplib": "^0.6.0"
-  },
-  "devDependencies": {
-    "standard": "^14.3.4"
-  }
+	"name": "@macotsuu/dispatcher",
+	"version": "0.4.2",
+	"description": "A package for creating communication between microservices based on RabbitMQ.",
+	"main": "src/index.js",
+	"engines": {
+		"node": ">=12.18.0"
+	},
+	"scripts": {
+		"lint": "standard src/**/*.js --fix",
+		"prepare": "npm run lint",
+		"postversion": "git push && git push --tags"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/macotsuu/dispatcher.git"
+	},
+	"keywords": [
+		"amqp",
+		"events",
+		"rpc",
+		"dispatcher"
+	],
+	"author": "macotsuu",
+	"license": "MIT",
+	"dependencies": {
+		"amqplib": "^0.6.0"
+	},
+	"devDependencies": {
+		"standard": "^14.3.4"
+	}
 }
