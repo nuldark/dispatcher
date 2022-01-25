@@ -1,4 +1,4 @@
-Copyright (c) 2020 FFx0q
+Copyright (c) 2020-2022 macotsuu
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

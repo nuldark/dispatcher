@@ -1,10 +1,14 @@
-const client = require('./client')
-const server = require('./server')
+const amqplib = require('amqplib')
 
-module.exports = options => {
+module.exports = async url => {
+	const amqp = await amqplib.connect(url)
 
-    return { 
-      Client: client(options.url),
-      Server: server(options.url)
-    }
+	const handler = await require('./server')(amqp)
+	const client = await require('./client')(amqp)
+
+	return {
+		call: client.call,
+		register: handler.register,
+		start: handler.listen,
+	}
 }

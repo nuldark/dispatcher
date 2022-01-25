@@ -1,6 +1,5 @@
-#IDE
 .idea/
 .vscode/
 
-node_modules/
-lib/
+/node_modules/
+/lib/

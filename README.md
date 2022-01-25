@@ -1,17 +1,16 @@
-# RPC Dispatcher
-A simple RPC Dispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.
+# Dispatcher
+A package for creating communication between microservices based on RabbitMQ.
 
 ## Usage
-    const { RPCClient, RPCServer } = require('rpc-dispatcher')
-
     (async () => {
-        const server = new RPCServer('amqp://localhost')
-        const client = new RPCClient('amqp://localhost')
+        const rpc = await require('./src')('amqp://localhost')
 
-        server.register('hello', (user: string) => `Hello ${user}`);
-        server.listen();
+        rpc.register('hello', user => `Hello ${user}`);
+        rpc.start();
 
-        console.log(await client.emit('hello', 'John'))
+        rpc.call('hello', 'john).then(response => {
+            console.log(response);
+        });
     })().catch(e => console.log(e))
 
 ## Api reference

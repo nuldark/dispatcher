@@ -1,21 +1,19 @@
 {
-  "name": "rpc-dispatcher",
+  "name": "@macotsuu/dispatcher",
   "version": "0.4.2",
-  "description": "A simple event dispatcher which implements RPC pattern over RabbitMQ. Allows to register subscribers and dispatch events across the microservices.",
-  "main": "lib/index.js",
+  "description": "A package for creating communication between microservices based on RabbitMQ.",
+  "main": "src/index.js",
   "engines": {
     "node": ">=12.18.0"
   },
   "scripts": {
-    "build": "rollup -c",
-    "lint": "standard src/*.js --fix",
+    "lint": "standard src/**/*.js --fix",
     "prepare": "npm run lint && npm run build",
-    "dev": "rollup -c -w",
     "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FFx0q/rpc-dispatcher.git"
+    "url": "git+https://github.com/macotsuu/dispatcher.git"
   },
   "keywords": [
     "amqp",
@@ -23,19 +21,12 @@
     "rpc",
     "dispatcher"
   ],
-  "author": "FFx0q",
+  "author": "macotsuu",
   "license": "MIT",
   "dependencies": {
     "amqplib": "^0.6.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^15.1.0",
-    "rimraf": "^3.0.2",
-    "rollup": "^2.29.0",
-    "rollup-plugin-terser": "^7.0.2",
     "standard": "^14.3.4"
-  },
-  "files": [
-    "lib/**/*"
-  ]
+  }
 }
