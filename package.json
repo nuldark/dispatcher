@@ -24,9 +24,9 @@
 	"author": "macotsuu",
 	"license": "MIT",
 	"dependencies": {
-		"amqplib": "^0.8.0"
+		"amqplib": "^0.10.3"
 	},
 	"devDependencies": {
-		"standard": "^16.0.4"
+		"standard": "^17.1.0"
 	}
 }
