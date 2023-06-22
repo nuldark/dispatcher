@@ -1,3 +1,3 @@
 module.exports = {
-	uuid: require('./uuid'),
+  uuid: require('./uuid')
 }
