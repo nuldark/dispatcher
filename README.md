@@ -27,7 +27,7 @@ Start listen for new requests. Use this after register events.
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/macotsuu/dispatcher/tags). 
 
 ## Authors
-* **Dominik Szamburski** - *Initial work* - [macotsuu](https://github.com/macotsuu)
+* **Dominik Szamburski** - *Initial work* - [nulldark](https://github.com/nulldark)
 
 See also the list of [contributors](https://github.com/macotsuu/dispatcher/contributors) who participated in this project.
 
